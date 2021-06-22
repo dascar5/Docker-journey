@@ -7,19 +7,22 @@
 Image is the application we want to run 
 Container is an instance of that image running as a process
 
-**Our image in this course will be Nginx web server**  
+**Our image in this course will be Nginx web server**
 
 `docker container run --publish 80:80 --detach --name webhost1 nginx (downloaded image from dockerhub, started a new container from that image and opened port 80 on localhost`
 
 Containers and VM's aren't the same thing, container is just a restricted process in the OS
 
 **To CLI into a container, we do it like this:**
+
 `docker container run -it --name proxy nginx bash`
 
 **To start a stopped container, do this**
+
 `docker container start -ai ubuntu`
 
 **To CLI into an already running container, do this** (exiting it doesn't stop the container like the case with the top one, because it wasn't started with bash command, but with exec)
+
 `docker container exec -it mysql bash`
 
 ## Docker networks
