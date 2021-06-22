@@ -8,6 +8,7 @@ Image is the application we want to run
 Container is an instance of that image running as a process
 
 **Our image in this course will be Nginx web server**  
+
 `docker container run --publish 80:80 --detach --name webhost1 nginx (downloaded image from dockerhub, started a new container from that image and opened port 80 on localhost`
 
 Containers and VM's aren't the same thing, container is just a restricted process in the OS
