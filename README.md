@@ -29,7 +29,7 @@ Containers and VM's aren't the same thing, container is just a restricted proces
 **To start a container on new network**
 `docker container run -d --name new_nginx --network my_app_nett nginx`
 
--To connect a docker from my default network to my new network, I do
+**To connect a docker from my default network to my new network, I do**
 `docker network connect f5ac43071c18 e8dda46a60d5 (first number is network ID, second number is container ID)`
 -To disconnect
 `docker network disconnect f5ac43071c18 e8dda46a60d5`
