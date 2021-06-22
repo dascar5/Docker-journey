@@ -1,6 +1,6 @@
 <!-- @format -->
 
-*These are personal notes I took during the time I spent learning about Docker and its associated tools.*
+*This is a personal notebook I'll be filling up while learning about Docker and associated tools, daily*
 # Docker notes
 
 
