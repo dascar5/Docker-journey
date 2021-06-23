@@ -92,3 +92,75 @@ Bind Mounting maps a host file or directory to a container file or directory. Ca
 `docker container run -d --name nginx -p 80:80 -v ${pwd}:/usr/share/nginx/html nginx (${pwd} is "print working directory", basically my current working directory)`
 
 ## Docker Compose 
+
+**Docker Compose** is used to configure relationships between containers. It saves our docker run settings in easy to read file, which leads to one-liner developer environment startups. Its comprised of 2 separate but related things:
+1) YAML formatted file that describes our solution options for containers, networks and volumes
+2) A CLI tool docker-compose used for local dev/test automation with those YAML files
+
+A template of a docker-compose.yml looks like this
+```
+version: '3.1'  # if no version is specified then v1 is assumed. Recommend v2 minimum
+
+services:  # containers. same as docker run
+  servicename: # a friendly name. this is also DNS name inside network
+    image: # Optional if you use build:
+    command: # Optional, replace the default CMD specified by the image
+    environment: # Optional, same as -e in docker run
+    volumes: # Optional, same as -v in docker run
+  servicename2:
+
+volumes: # Optional, same as docker volume create
+
+networks: # Optional, same as docker network create
+```
+docker-compose CLI is not a production-grade tool but it's ideal for local dev and test. 
+
+**Two most common commands are:**
+`docker-compose up` (setup volumes/networks and start all containers)
+`docker-compose down` (stop all containers and remove cont/vol/net)
+
+Compose can also build custom images. It will build them with docker-compose up if not found in cache.
+
+```
+version: '2'
+
+# based off compose-sample-2, only we build nginx.conf into image
+# uses sample HTML static site from https://startbootstrap.com/themes/agency/
+
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    ports:
+      - '80:80'
+  web:
+    image: httpd
+    volumes:
+      - ./html:/usr/local/apache2/htdocs/
+```
+For example, in here, first service is a custom image built based on nginx.Dockerfile:
+```
+FROM nginx:1.13
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+```
+The dockerfile states a custom .conf file replacing the default one in nginx image:
+```
+server {
+
+	listen 80;
+
+	location / {
+
+		proxy_pass         http://web;
+		proxy_redirect     off;
+		proxy_set_header   Host $host;
+		proxy_set_header   X-Real-IP $remote_addr;
+		proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header   X-Forwarded-Host $server_name;
+
+	}
+}
+```
+It's just copying this data into the default image, thus making it "different" - custom-nginx. Docker-compose up then builds it based on yaml file where all of this is connected, using httpd (apache) server and bind-mounting the html files in directory, so it display a static website.
