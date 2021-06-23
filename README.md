@@ -117,6 +117,7 @@ docker-compose CLI is not a production-grade tool but it's ideal for local dev a
 
 **Two most common commands are:**
 `docker-compose up` (setup volumes/networks and start all containers)
+
 `docker-compose down` (stop all containers and remove cont/vol/net)
 
 Compose can also build custom images. It will build them with docker-compose up if not found in cache.
