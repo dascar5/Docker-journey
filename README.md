@@ -166,3 +166,5 @@ server {
 }
 ```
 It's just copying this data into the default image, thus making it "different" - custom-nginx. Docker-compose up then builds it based on yaml file where all of this is connected, using httpd (apache) server and bind-mounting the html files in directory, so it display a static website.
+
+Stopped at 7.1
