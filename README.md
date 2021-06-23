@@ -116,6 +116,7 @@ networks: # Optional, same as docker network create
 docker-compose CLI is not a production-grade tool but it's ideal for local dev and test. 
 
 **Two most common commands are:**
+
 `docker-compose up` (setup volumes/networks and start all containers)
 
 `docker-compose down` (stop all containers and remove cont/vol/net)
