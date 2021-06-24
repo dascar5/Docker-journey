@@ -191,48 +191,58 @@ A Docker Swarm is a group of either physical or virtual machines that are runnin
 Docker swarm is a container orchestration tool, meaning that it allows the user to manage multiple containers deployed across multiple host machines.
 One of the key benefits associated with the operation of a docker swarm is the high level of availability offered for applications. In a docker swarm, there are typically several worker nodes and at least one manager node that is responsible for handling the worker nodes' resources efficiently and ensuring that the cluster operates efficiently.
 
-To initialize swarm on docker, do:
+**To initialize swarm on docker, do:**
 `docker swarm init `
 
-The terminal will output a tocken you use to connect other nodes to your current leader node:
+**The terminal will output a tocken you use to connect other nodes to your current leader node:**
+
 `docker swarm join --token <your token> 192.168.65.3:2377`
 
-To list all current nodes (only 1 - leader node so far):
+**To list all current nodes (only 1 - leader node so far):**
+
 `docker node ls`
 
-To run a service and have it do something:
+**To run a service and have it do something:**
+
 `docker service create alpine ping 8.8.8.8`
 
-To scale up this service, by making it have 3 replicas:
+**To scale up this service, by making it have 3 replicas:**
+
 `docker service update <service id> --replicas 3` 
 
 Even if we force remove a running container on swarm, swarm will automatically start it up back again to match specified replica (if we set up 3, and deleted 1, it will automatically revive it to match 3/3). That's the point of an orchestration service, make sure it **always runs!** Docker run would never recreate a removed container, while the whole point of orchestration is to keep everything running accross all nodes.
 
-To shut it down, we actually have to shut down the service:
+**To shut it down, we actually have to shut down the service:**
+
 `docker service rm <service id>`
 
-To create a "remote" node for testing, we use **docker-machine**, which boots up a docker ready linux image in a VM for our swarm purposes. I am going to create 3 nodes:
+**To create a "remote" node for testing**, we use **docker-machine**, which boots up a docker ready linux image in a VM for our swarm purposes. I am going to create 3 nodes:
+
 `docker-machine create node1`
 `docker-machine create node2`
 `docker-machine create node3`
 
-To access the newly created machine, we can do:
+**To access the newly created machine, we can do:**
 `docker-machine ssh node1`
 `docker-machine ssh node2`
 `docker-machine ssh node3`
 
-Command `docker swarm init` probably won't work on its own due to how cloud works, so we use in each of the nodes:
+**Command `docker swarm init` probably won't work on its own due to how cloud works, so we use in each of the nodes:**
+
 `docker swarm init --advertise-addr <IP address>`
 
 This turns node1 into swarm manager, and pasting the token into node2 and node3 makes them "workers" and connects them to node1 (manager), thus making the swarm.
 
 Only swarm manager can use swarm commands, running `docker node ls` on node2 or node3 will throw an error.
 
-This command turns node2 into a manager as well:
+**This command turns node2 into a manager as well:**
+
 `docker node update --role manager node2`
 
-We can also make a node a manager by getting the join-token manager. Only works on nodes that haven't already joined:
+**We can also make a node a manager by getting the join-token manager. Only works on nodes that haven't already joined:**
+
 `docker swarm join-token manager`
 
-To list the running service accross nodes:
+**To list the running service accross nodes:**
+
 `docker service ps <service name>`
