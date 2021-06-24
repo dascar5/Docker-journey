@@ -10,7 +10,7 @@ Image is the application we want to run. Container is an instance of that image 
 
 **Our image in this course will be Nginx web server**
 
-`docker container run --publish 80:80 --detach --name webhost1 nginx (downloaded image from dockerhub, started a new container from that image and opened port 80 on localhost`
+`docker container run --publish 80:80 --detach --name webhost1 nginx (downloaded image from dockerhub, started a new container from that image and opened port 80 on localhost)`
 
 Containers and VM's aren't the same thing, container is just a restricted process in the OS.
 
@@ -38,11 +38,11 @@ Containers and VM's aren't the same thing, container is just a restricted proces
 
 **To connect a docker from my default network to my new network, I do**
 
-`docker network connect f5ac43071c18 e8dda46a60d5 (first number is network ID, second number is container ID)`
+`docker network connect <network id> <container id>`
 
 **To disconnect**
 
-`docker network disconnect f5ac43071c18 e8dda46a60d5`
+`docker network disconnect <network id> <container id>`
 
 The reason these networks exist is for protection - keep ports safe, lets say keep frontend on one network, backend on another.
 
@@ -167,4 +167,72 @@ server {
 ```
 It's just copying this data into the default image, thus making it "different" - custom-nginx. Docker-compose up then builds it based on yaml file where all of this is connected, using httpd (apache) server and bind-mounting the html files in directory, so it display a static website.
 
-Stopped at 7.1
+## Swarm
+
+How do we scale out/in/up/down?
+How can we ensure our containers are re-created if they fail?
+How can we replace containers without downtime?
+How can we control/track where containers get started?
+How can we create cross-node virtual networks?
+How can we ensure only trusted servers run our containers?
+How can we store secrets, keys, passwords and get them to the right container (and only that container)?
+
+**Swarm Mode: Built-In Orchestration**
+
+Swarm mode is a clustering solution built inside Docker. It's not enabled by default, once enabled we get access to: 
+```
+docker swarm
+docker node
+docker service
+docker stack
+docker secret
+```
+A Docker Swarm is a group of either physical or virtual machines that are running the Docker application and that have been configured to join together in a cluster. Once a group of machines have been clustered together, you can still run the Docker commands that you're used to, but they will now be carried out by the machines in your cluster. The activities of the cluster are controlled by a swarm manager, and machines that have joined the cluster are referred to as nodes.
+Docker swarm is a container orchestration tool, meaning that it allows the user to manage multiple containers deployed across multiple host machines.
+One of the key benefits associated with the operation of a docker swarm is the high level of availability offered for applications. In a docker swarm, there are typically several worker nodes and at least one manager node that is responsible for handling the worker nodes' resources efficiently and ensuring that the cluster operates efficiently.
+
+To initialize swarm on docker, do:
+`docker swarm init `
+
+The terminal will output a tocken you use to connect other nodes to your current leader node:
+`docker swarm join --token <your token> 192.168.65.3:2377`
+
+To list all current nodes (only 1 - leader node so far):
+`docker node ls`
+
+To run a service and have it do something:
+`docker service create alpine ping 8.8.8.8`
+
+To scale up this service, by making it have 3 replicas:
+`docker service update <service id> --replicas 3` 
+
+Even if we force remove a running container on swarm, swarm will automatically start it up back again to match specified replica (if we set up 3, and deleted 1, it will automatically revive it to match 3/3). That's the point of an orchestration service, make sure it **always runs!** Docker run would never recreate a removed container, while the whole point of orchestration is to keep everything running accross all nodes.
+
+To shut it down, we actually have to shut down the service:
+`docker service rm <service id>`
+
+To create a "remote" node for testing, we use **docker-machine**, which boots up a docker ready linux image in a VM for our swarm purposes. I am going to create 3 nodes:
+`docker-machine create node1`
+`docker-machine create node2`
+`docker-machine create node3`
+
+To access the newly created machine, we can do:
+`docker-machine ssh node1`
+`docker-machine ssh node2`
+`docker-machine ssh node3`
+
+Command `docker swarm init` probably won't work on its own due to how cloud works, so we use in each of the nodes:
+`docker swarm init --advertise-addr <IP address>`
+
+This turns node1 into swarm manager, and pasting the token into node2 and node3 makes them "workers" and connects them to node1 (manager), thus making the swarm.
+
+Only swarm manager can use swarm commands, running `docker node ls` on node2 or node3 will throw an error.
+
+This command turns node2 into a manager as well:
+`docker node update --role manager node2`
+
+We can also make a node a manager by getting the join-token manager. Only works on nodes that haven't already joined:
+`docker swarm join-token manager`
+
+To list the running service accross nodes:
+`docker service ps <service name>`
