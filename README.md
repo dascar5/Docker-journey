@@ -192,6 +192,7 @@ Docker swarm is a container orchestration tool, meaning that it allows the user 
 One of the key benefits associated with the operation of a docker swarm is the high level of availability offered for applications. In a docker swarm, there are typically several worker nodes and at least one manager node that is responsible for handling the worker nodes' resources efficiently and ensuring that the cluster operates efficiently.
 
 **To initialize swarm on docker, do:**
+
 `docker swarm init `
 
 **The terminal will output a tocken you use to connect other nodes to your current leader node:**
@@ -217,15 +218,17 @@ Even if we force remove a running container on swarm, swarm will automatically s
 `docker service rm <service id>`
 
 **To create a "remote" node for testing**, we use **docker-machine**, which boots up a docker ready linux image in a VM for our swarm purposes. I am going to create 3 nodes:
-
-`docker-machine create node1`
-`docker-machine create node2`
-`docker-machine create node3`
-
+```
+docker-machine create node1
+docker-machine create node2
+docker-machine create node3
+```
 **To access the newly created machine, we can do:**
-`docker-machine ssh node1`
-`docker-machine ssh node2`
-`docker-machine ssh node3`
+```
+docker-machine ssh node1
+docker-machine ssh node2
+docker-machine ssh node3
+```
 
 **Command `docker swarm init` probably won't work on its own due to how cloud works, so we use in each of the nodes:**
 
