@@ -195,7 +195,7 @@ One of the key benefits associated with the operation of a docker swarm is the h
 
 `docker swarm init `
 
-**The terminal will output a tocken you use to connect other nodes to your current leader node:**
+**The terminal will output a token you use to connect other nodes to your current leader node:**
 
 `docker swarm join --token <your token> 192.168.65.3:2377`
 
@@ -249,3 +249,15 @@ Only swarm manager can use swarm commands, running `docker node ls` on node2 or 
 **To list the running service accross nodes:**
 
 `docker service ps <service name>`
+
+**To create a network for our swarm:**
+
+`docker network create --driver overlay <network name>`
+
+I set up both postgres and drupal service - postgres started on node1, drupal on node2. Hitting any of the node IP addresses opens up drupal setup in browser. This lets drupal and postgres talk to each other because they're on the same network overlay, and you can use all 3 node IP addresses to access drupal.
+
+What lets containers talk to each other is actually **Routing Mesh**. It routes incoming packets for a service to proper task, spans all nodes in swarm and it load balances swarm services across their tasks. 
+Two ways this works:
+1) Container-to-Container in a Overlay network (just like I used it now)
+2) External traffic incoming to published ports (all nodes listen)
+
