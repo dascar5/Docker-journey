@@ -263,7 +263,7 @@ Two ways this works:
 
 **A real life example of an app with python frontend and nodejs backend, redis, workers and postgres running in a 3 node swarm:**
 
-![VotingApp](votingapp.png)
+![VotingApp](images/votingapp.png)
 
 ```
 docker network create --driver overlay backend
@@ -281,9 +281,9 @@ docker service create --name result --network backend -p 5001:80 bretfisher/exam
 
 Stacks is basically a Compose file for Swarm. We use `docker stack deploy` rather than `docker service create`. Stack manages all those objects for us, including overlay network per stack. There's also a new `deploy: ` key in Compose file, we can't do `build: `. Building shouldn't happen on production swarm. Stack essentially lets me manage services, its replicas, volues and overlay networks in a single file.
 
-![stack](stack.png)
+![stack](images/stack.png)
 
-An example of a swarm stack file, in case of our voting app, is:
+An example of a swarm stack file, in case of our voting app, is below, and we'd run it with `docker stack deploy -c <compose filename>.yml <name of stack>`
 
 ```
 version: "3"
@@ -388,10 +388,22 @@ volumes:
 
 The container `visualizer` we added to the voting app can be accessed on ip:8080, and it shows the data of our running swarm:
 
-![visualizer](visualizer.png)
+![visualizer](images/visualizer.png)
 
 <br>
 
 ### Secrets Storage
 
 Easiest secure solution for storing secrets in Swarm, its already included in Swarm. A secret can be usernames and passwords, TLS certificates and keys, SSH key, or any other API key, ie. anything that shouldn't be seen. It supports generic strings or binary content up to 500kb in size, and doesn't require any rewriting.
+
+**Two ways to create a secret:**
+1) Store secrets in a text file, go to CLI and `docker secret create <secret name> <secret_file.txt>`
+2) Echo it from a command line: `echo "<my password>" | docker secret create <secret name> -`
+
+**To practically implement this, we can do:**
+
+`docker service create --name psql --secret psql_user --secret psql_pass -e POSTGRES_PASSWORD_FILE=/run/secrets/psql_pass -e POSTGRES_USER_FILE=/run/secrets/psql_user postgres`
+
+This command creates a service that uses our username and password secret file as arguments for username/password -e requirement of postgres.
+
+Text files for secrets are obviously not used in real life scenarios.

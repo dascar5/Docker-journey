@@ -1,4 +1,6 @@
-version: "3.1"
+# @format
+
+version: '3.1'
 
 services:
   psql:
@@ -15,4 +17,3 @@ secrets:
     file: ./psql_user.txt
   psql_password:
     file: ./psql_password.txt
-
