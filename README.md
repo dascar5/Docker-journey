@@ -4,7 +4,7 @@
 # Docker notes
 
 
-## Image vs Container
+## Introduction
 
 Image is the application we want to run. Container is an instance of that image running as a process.
 
@@ -26,7 +26,7 @@ Containers and VM's aren't the same thing, container is just a restricted proces
 
 `docker container exec -it mysql bash`
 
-## Docker networks
+### Docker networks
 
 **To create a docker network where we can attach containers** (bridge driver by default)
 
@@ -51,7 +51,7 @@ The reason these networks exist is for protection - keep ports safe, lets say ke
 
 Containers shouldn't rely on IP addresses when talking to each other, DNS automatically resolves that in the background (inter-communication between containers).
 
-## Docker alias
+### Docker alias
 
 **To give a container an alias we do it like this**
 `docker container run -d --name elsearch1 --network round_robin --network-alias search elasticsearch:2`
@@ -61,7 +61,7 @@ Containers shouldn't rely on IP addresses when talking to each other, DNS automa
 
 This was a round robin test - set up 2 identical containers with same alias (search). When you call a function on those containers, either one of them responds, depending who gets reached first. Basically, if one fails, the other one can do the same task with no interruptions (think of multiple servers accross the world for google or riot).
 
-## Tags
+### Tags
 
 **To retag a repo, do this**
 `docker image tag nginx dantesvn/nginx`
@@ -76,7 +76,7 @@ This was a round robin test - set up 2 identical containers with same alias (sea
 
 Order of lines matters in dockerfile, keep those lines that change the least at the top, because everything after the changed line has to be rebuilt again.
 
-## Volumes and Bind mounts
+### Volumes and Bind mounts
 
 Containers are supposed to be immutable - don't change containers, just re deploy it with changes, what about databases though? Containers shouldn't contain that kind of data, unique data is supposed to be in a special place. Docker has two options for containers to store files in the host machine, so that the files are persisted even after the container stops: **volumes, and bind mounts**.
 
@@ -167,7 +167,7 @@ server {
 ```
 It's just copying this data into the default image, thus making it "different" - custom-nginx. Docker-compose up then builds it based on yaml file where all of this is connected, using httpd (apache) server and bind-mounting the html files in directory, so it display a static website.
 
-## Swarm
+## Docker Swarm
 
 How do we scale out/in/up/down?
 How can we ensure our containers are re-created if they fail?
@@ -263,6 +263,8 @@ Two ways this works:
 
 **A real life example of an app with python frontend and nodejs backend, redis, workers and postgres running in a 3 node swarm:**
 
+![VotingApp](votingapp.png)
+
 ```
 docker network create --driver overlay backend
 docker network create --driver overlay frontend
@@ -273,4 +275,123 @@ docker service create --name worker --network backend --network frontend bretfis
 docker service create --name db --network backend -e POSTGRES_HOST_AUTH_METHOD=trust --mount type=volume,source=db-data,target=/var/lib/postgresql/data postgres:9.4
 docker service create --name result --network backend -p 5001:80 bretfisher/examplevotingapp_result
 ```
+<br>
 
+### Stacks: Production grade Compose
+
+Stacks is basically a Compose file for Swarm. We use `docker stack deploy` rather than `docker service create`. Stack manages all those objects for us, including overlay network per stack. There's also a new `deploy: ` key in Compose file, we can't do `build: `. Building shouldn't happen on production swarm. Stack essentially lets me manage services, its replicas, volues and overlay networks in a single file.
+
+![stack](stack.png)
+
+An example of a swarm stack file, in case of our voting app, is:
+
+```
+version: "3"
+services:
+
+  redis:
+    image: redis:alpine
+    networks:
+      - frontend
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+  db:
+    image: postgres:9.4
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  vote:
+    image: bretfisher/examplevotingapp_vote
+    ports:
+      - 5000:80
+    networks:
+      - frontend
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+      restart_policy:
+        condition: on-failure
+  result:
+    image: bretfisher/examplevotingapp_result
+    ports:
+      - 5001:80
+    networks:
+      - backend
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  worker:
+    image: bretfisher/examplevotingapp_worker
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - db
+      - redis
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels: [APP=VOTING]
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints: [node.role == manager]
+
+  visualizer:
+    image: dockersamples/visualizer
+    ports:
+      - 8080:8080
+    stop_grace_period: 1m30s
+    networks:
+      - frontend
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  db-data:
+```
+
+**Once started, an easy way to check on running services is using:**
+
+`docker stack ps <name of stack>`
+
+The container `visualizer` we added to the voting app can be accessed on ip:8080, and it shows the data of our running swarm:
+
+![visualizer](visualizer.png)
+
+<br>
+
+### Secrets Storage
+
+Easiest secure solution for storing secrets in Swarm, its already included in Swarm. A secret can be usernames and passwords, TLS certificates and keys, SSH key, or any other API key, ie. anything that shouldn't be seen. It supports generic strings or binary content up to 500kb in size, and doesn't require any rewriting.
