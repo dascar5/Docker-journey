@@ -4,6 +4,20 @@
 # Docker notes
 
 
+  * [Introduction](#introduction)
+    + [Docker networks](#docker-networks)
+    + [Docker alias](#docker-alias)
+    + [Tags](#tags)
+  * [Dockerfile](#dockerfile)
+    + [Volumes and Bind mounts](#volumes-and-bind-mounts)
+  * [Docker Compose](#docker-compose)
+  * [Docker Swarm](#docker-swarm)
+    + [Stacks: Production grade Compose](#stacks--production-grade-compose)
+    + [Secrets Storage](#secrets-storage)
+    + [Full App Lifecycle with Compose](#full-app-lifecycle-with-compose)
+    + [Service Updates](#service-updates)
+    + [Docker Healthchecks](#docker-healthchecks)
+
 ## Introduction
 
 Image is the application we want to run. Container is an instance of that image running as a process.
