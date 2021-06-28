@@ -566,7 +566,9 @@ Supported in Dockerfile, Compose YAML, docker run, and Swarm Services. It expect
 The **HEALTHCHECK** instruction has two forms:
 
 `HEALTHCHECK [OPTIONS] CMD command` (check container health by running a command inside the container)
+
 `HEALTHCHECK NONE` (disable any healthcheck inherited from the base image)
+
 The HEALTHCHECK instruction tells Docker how to test a container to check that it is still working. This can detect cases such as a web server that is stuck in an infinite loop and unable to handle new connections, even though the server process is still running.
 
 When a container has a healthcheck specified, it has a health status in addition to its normal status. This status is initially starting. Whenever a health check passes, it becomes healthy (whatever state it was previously in). After a certain number of consecutive failures, it becomes unhealthy.
@@ -574,9 +576,13 @@ When a container has a healthcheck specified, it has a health status in addition
 The options that can appear before CMD are:
 
 `--interval=DURATION (default: 30s)`
+
 `--timeout=DURATION (default: 30s)`
+
 `--start-period=DURATION (default: 0s)`
+
 `--retries=N (default: 3)`
+
 
 The health check will first run interval seconds after the container is started, and then again interval seconds after each previous check completes. If a single run of the check takes longer than timeout seconds then the check is considered to have failed. It takes retries consecutive failures of the health check for the container to be considered unhealthy.
 
