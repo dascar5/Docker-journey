@@ -407,3 +407,176 @@ Easiest secure solution for storing secrets in Swarm, its already included in Sw
 This command creates a service that uses our username and password secret file as arguments for username/password -e requirement of postgres.
 
 Text files for secrets are obviously not used in real life scenarios.
+
+### Full App Lifecycle with Compose
+
+By default, Compose reads two files, a `docker-compose.yml` and an optional `docker-compose.override.yml` file. By convention, `the docker-compose.yml` contains your base configuration. The override file, as its name implies, can contain configuration overrides for existing services or entirely new services.
+
+If a service is defined in both files, Compose merges the configurations using the rules described in Adding and overriding configuration.
+
+To use multiple override files, or an override file with a different name, you can use the -f option to specify the list of files. Compose merges files in the order they’re specified on the command line. 
+
+The specific use case for this are different environment, as seen in **`swarm-stack-3` folder**. 
+
+**docker-compose.yml** (base, with only 2 images)
+```
+version: '3.1'
+
+services:
+
+  drupal:
+    image: custom-drupal:latest
+
+  postgres:
+    image: postgres:12.1
+
+```
+
+**docker-compose.override.yml** (adds onto base)
+```
+version: '3.1'
+
+services:
+
+  drupal:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - drupal-modules:/var/www/html/modules
+      - drupal-profiles:/var/www/html/profiles
+      - drupal-sites:/var/www/html/sites
+      - ./themes:/var/www/html/themes
+ 
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/psql-pw
+    secrets:
+      - psql-pw
+    volumes:
+      - drupal-data:/var/lib/postgresql/data
+
+volumes:
+  drupal-data:
+  drupal-modules:
+  drupal-profiles:
+  drupal-sites:
+  drupal-themes:
+
+secrets:
+  psql-pw:
+    file: psql-fake-password.txt
+```
+**docker-compose.prod.yml** (prod env, only difference is external secret)
+```
+version: '3.1'
+
+services:
+
+  drupal:
+    ports:
+      - "80:80"
+    volumes:
+      - drupal-modules:/var/www/html/modules
+      - drupal-profiles:/var/www/html/profiles
+      - drupal-sites:/var/www/html/sites
+      - drupal-themes:/var/www/html/themes
+ 
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/psql-pw
+    secrets:
+      - psql-pw
+    volumes:
+      - drupal-data:/var/lib/postgresql/data
+
+volumes:
+  drupal-data:
+  drupal-modules:
+  drupal-profiles:
+  drupal-sites:
+  drupal-themes:
+
+secrets:
+  psql-pw:
+    external: true
+```
+
+**docker-compose.test.yml** (sample data on volumes, for testing purposes)
+```
+version: '3.1'
+
+services:
+
+  drupal:
+    image: custom-drupal
+    build: .
+    ports:
+      - "80:80"
+
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/psql-pw
+    secrets:
+      - psql-pw
+    volumes:
+      # NOTE: this might be sample data you host in your CI server
+      # so you can do integration testing with sample data
+      # this may not work on Docker for Windows/Mac due to bind-mounting
+      # database data across OSes, which doesn't always work
+      # in those cases you should use named volumes
+      - ./sample-data:/var/lib/postgresql/data
+secrets:
+  psql-pw:
+    file: psql-fake-password.txt
+```
+
+A simple `docker-compose up` will run the override file. On the other hand, `docker-compose -f docker-compose.yml -f docker-compose.prod.yml config > output.yml` will replace/merge the base file with the production file, and it will output the yml. Note that `up` isn't used, but `config`.
+
+### Service Updates
+
+They provide rolling replacement of tasks/containers in a service, and it limits downtime. Stack deploy, when pre-existing, will issue service updates.
+
+**To update a service image:**
+
+`docker service update --image myapp:1.2.1 <servicename>`
+
+**To add an environment variable and remove a port:**
+
+`docker service update --env-add NODE_ENV=production --publish-rm 8080`
+
+**To change number of replicas of two services**
+
+`docker service scale web=8 api=6`
+
+Regarding **Swarm**, just edit the YAML file, and then `docker stack deploy -c file.ylm <stackname>`, as usual.
+
+You can't "update" a port on the fly, you have to remove the current one and add a new one. The current service I use is a nginx server with name "web" on port 8088, so:
+
+`docker service update --publish-rm 8088 --publish-add 9090:80 web`
+
+Sometimes, tasks won't be evenly split between nodes. To force the scheduler to split them up the best way, do 
+
+`docker service update --force <servicename>`
+
+### Docker Healthchecks
+
+Supported in Dockerfile, Compose YAML, docker run, and Swarm Services. It expects `exit 0` (OK) or `exit 1` (ERROR). It only has **3 states: starting, healthy and unhealthy**. Services will replace tasks if they fail healthcheck.
+
+The **HEALTHCHECK** instruction has two forms:
+
+`HEALTHCHECK [OPTIONS] CMD command` (check container health by running a command inside the container)
+`HEALTHCHECK NONE` (disable any healthcheck inherited from the base image)
+The HEALTHCHECK instruction tells Docker how to test a container to check that it is still working. This can detect cases such as a web server that is stuck in an infinite loop and unable to handle new connections, even though the server process is still running.
+
+When a container has a healthcheck specified, it has a health status in addition to its normal status. This status is initially starting. Whenever a health check passes, it becomes healthy (whatever state it was previously in). After a certain number of consecutive failures, it becomes unhealthy.
+
+The options that can appear before CMD are:
+
+`--interval=DURATION (default: 30s)`
+`--timeout=DURATION (default: 30s)`
+`--start-period=DURATION (default: 0s)`
+`--retries=N (default: 3)`
+
+The health check will first run interval seconds after the container is started, and then again interval seconds after each previous check completes. If a single run of the check takes longer than timeout seconds then the check is considered to have failed. It takes retries consecutive failures of the health check for the container to be considered unhealthy.
+
