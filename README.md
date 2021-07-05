@@ -600,3 +600,33 @@ The options that can appear before CMD are:
 
 The health check will first run interval seconds after the container is started, and then again interval seconds after each previous check completes. If a single run of the check takes longer than timeout seconds then the check is considered to have failed. It takes retries consecutive failures of the health check for the container to be considered unhealthy.
 
+### Container Registries
+
+An image registry needs to be part of a container plan. Docker Hub is the most popular public image registry out there. The goal is to have a private image registry for our network, for example, `docker-registry`. It is the de facto in private container registries. It's not as full featured as Hub or others, it has no web UI, and it has basic auth only. At its core, its a web API and storage system, written in Go. However, it supports local, S3, Azure, Google, and other storages. `registry` image runs on the default port `5000`. I will re-tag an existing image and push it to this new registry, then I'll remove the image from local cache and pull it from new registry. Regarding security, `registry` is secure by defauly: Docker won't talk to registry without HTTPS, except on localhost.
+
+**To run the `registry` image:**
+
+`docker container run -d -p 5000:5000 --name registry registry`
+
+**Now, I'm pulling any image, for example**
+
+`docker pull hello-world`
+
+**In order to push it to my private registry, I need to give it another tag that tells my deamon where it needs to send it:**
+
+`docker tag hello-world 127.0.0.1:5000/hello-world`
+
+So if we do a `docker push 127.0.0.1:5000/hello-world`, it won't push it to the Hub, but to our local registry.
+
+**To give registry a volume:**
+
+`docker container run -d -p 5000:5000 --name registry -v ${pwd}/registry-data:/var/lib/registry registry`
+
+**Private Docker Registry with Swarm** works the same way as localhost. Because of Routing Mesh, all nodes an see `127.0.0.1:5000`. To start a registry on swarm, we do:
+
+`docker service create --name registry --publish 5000:5000 registry`
+
+**To pull and run an image from our local private repository, for example:**
+
+`docker service create --name nginx -p 80:80 --replicas 5 127.0.0.1:5000/nginx`
+
