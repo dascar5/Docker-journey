@@ -17,6 +17,7 @@
     + [Full App Lifecycle with Compose](#full-app-lifecycle-with-compose)
     + [Service Updates](#service-updates)
     + [Docker Healthchecks](#docker-healthchecks)
+    + [Container Registries](#container-registries)
 
 ## Introduction
 
