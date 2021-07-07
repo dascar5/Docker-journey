@@ -631,3 +631,4 @@ So if we do a `docker push 127.0.0.1:5000/hello-world`, it won't push it to the 
 
 `docker service create --name nginx -p 80:80 --replicas 5 127.0.0.1:5000/nginx`
 
+Stao na 12.1
