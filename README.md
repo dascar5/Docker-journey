@@ -631,4 +631,298 @@ So if we do a `docker push 127.0.0.1:5000/hello-world`, it won't push it to the 
 
 `docker service create --name nginx -p 80:80 --replicas 5 127.0.0.1:5000/nginx`
 
-Stao na 12.1
+
+## Kubernetes
+
+Kubernetes is one of the most popular orchestrators. Released by Google, maintained by open source community. Runs on top of Docker as a set of APIs in containers. Provides a set of API/CLI tools to manage containers across servers, similar to Swarm. Many clouds provide it, AWS, Google, etc.
+
+### Why Kubernetes?
+
+Containers are a good way to bundle and run your applications. In a production environment, you need to manage the containers that run the applications and ensure that there is no downtime. For example, if a container goes down, another container needs to start. Wouldn't it be easier if this behavior was handled by a system?
+
+That's how Kubernetes comes to the rescue! Kubernetes provides you with a framework to run distributed systems resiliently. It takes care of scaling and failover for your application, provides deployment patterns, and more. For example, Kubernetes can easily manage a canary deployment for your system.
+
+Kubernetes provides you with:
+
+1) **Service discovery and load balancing** - Kubernetes can expose a container using the DNS name or using their own IP address. If traffic to a container is high, Kubernetes is able to load balance and distribute the network traffic so that the deployment is stable.
+2) **Storage orchestration** - Kubernetes allows you to automatically mount a storage system of your choice, such as local storages, public cloud providers, and more.
+3) **Automated rollouts and rollbacks** - You can describe the desired state for your deployed containers using Kubernetes, and it can change the actual state to the desired state at a controlled rate. For example, you can automate Kubernetes to create new containers for your deployment, remove existing containers and adopt all their resources to the new container.
+4) **Automatic bin packing** - You provide Kubernetes with a cluster of nodes that it can use to run containerized tasks. You tell Kubernetes how much CPU and memory (RAM) each container needs. Kubernetes can fit containers onto your nodes to make the best use of your resources.
+5) **Self-healing** - Kubernetes restarts containers that fail, replaces containers, kills containers that don't respond to your user-defined health check, and doesn't advertise them to clients until they are ready to serve.
+6) **Secret and configuration management** - Kubernetes lets you store and manage sensitive information, such as passwords, OAuth tokens, and SSH keys. You can deploy and update secrets and application configuration without rebuilding your container images, and without exposing secrets in your stack configuration.
+
+### Kubernetes vs Swarm
+<br>
+
+**Pros of Kubernetes**
+
+- Open-source community that is very active in developing the code base
+- Fast-growing KubeCon conferences throughout the year that are more than doubling attendance numbers
+- Battle-tested by big players like Google and our own IBM workloads and runs on most operating systems
+- Largest adoption in the market
+- Available on the public cloud or for on-premises — managed or non-managed offerings from all the big cloud providers (IBM Cloud, AWS, Microsoft Azure, Google Cloud Platform, etc.)
+- Broad Kubernetes support from an ecosystem of cloud tool vendors, such as Sysdig, LogDNA, and Portworx (among many others)
+- Key functionalities include service discovery, ingress and load balancing, self-healing, storage orchestration, horizontal scalability, automated rollouts and rollbacks, and batch execution
+- Unified set of APIs and strong guarantees about the cluster state
+
+**Cons of Kubernetes**
+
+- Management of the Kubernetes master takes specialized knowledge
+- Updates from open source community are frequent and require careful patching in order to avoid disrupting workloads
+- Too heavyweight for individual developers to set up for simplistic apps and infrequent deployments
+- Often need additional tools (e.g., kubectl CLI), services, continuous integration/continuous deployment (CI/CD) workflows and other DevOps practices to fully manage access, identity, governance and security
+<br>
+<br>
+
+
+**Pros of Docker Swarm**
+
+- Built for use with the Docker Engine (Docker is a container platform used for building and deploying containerized applications)
+- Has its own Swarm API
+- Smoothly integrates with Docker tools like Docker Compose and Docker CLI (uses the same command line interface (CLI) as Docker Engine)
+- Tools, services, and software that run with Docker containers will also work well with Swarm
+- Is easy to install and set up for Docker environments
+- Uses a filtering and scheduling system to provide intelligent node selection, allowing you to pick the optimal nodes in a cluster for container deployment
+
+
+**Cons of Docker Swarm**
+
+- Limited customizations and extensions
+- Less functionality-rich than Kubernetes
+- No easy way to separate Dev-Test-Prod workloads in DevOps pipeline
+<br>
+
+Docker Swarm is deployed with the Docker Engine, and is, therefore, readily available in your environment. As a result, Swarm is easier to start with, and it may be more ideal for smaller workloads. 
+
+Kubernetes is now supported by every major cloud provider and do-it-yourself offerings like Docker Enterprise Edition, highlighting the widespread popularity of this orchestration tool. Kubernetes is more powerful, customizable, and flexible, which comes at the cost of a steeper initial learning curve. Running Kubernetes through a managed service simplifies open-source management responsibilities, which allows you to focus on building your applications.
+
+
+### Components
+
+#### Control Place Components
+
+![k8s](images/k8s.svg)
+
+The control plane's components make global decisions about the cluster (for example, scheduling), as well as detecting and responding to cluster events (for example, starting up a new pod when a deployment's replicas field is unsatisfied).
+
+**kube-apiserver**
+The API server is a component of the Kubernetes control plane that exposes the Kubernetes API. The API server is the front end for the Kubernetes control plane.
+The main implementation of a Kubernetes API server is kube-apiserver. kube-apiserver is designed to scale horizontally—that is, it scales by deploying more instances. You can run several instances of kube-apiserver and balance traffic between those instances.
+
+**etcd**
+Consistent and highly-available key value store used as Kubernetes' backing store for all cluster data.
+If your Kubernetes cluster uses etcd as its backing store, make sure you have a back up plan for those data.
+
+**kube-scheduler**
+Control plane component that watches for newly created Pods with no assigned node, and selects a node for them to run on.
+Factors taken into account for scheduling decisions include: individual and collective resource requirements, hardware/software/policy constraints, affinity and anti-affinity specifications, data locality, inter-workload interference, and deadlines.
+
+**kube-controller-manager**
+Control Plane component that runs controller processes.
+Logically, each controller is a separate process, but to reduce complexity, they are all compiled into a single binary and run in a single process.
+Some types of these controllers are:
+- Node controller: Responsible for noticing and responding when nodes go down.
+- Job controller: Watches for Job objects that represent one-off tasks, then creates Pods to run those tasks to completion.
+- Endpoints controller: Populates the Endpoints object (that is, joins Services & Pods).
+- Service Account & Token controllers: Create default accounts and API access tokens for new namespaces.
+
+**cloud-controller-manager**
+A Kubernetes control plane component that embeds cloud-specific control logic. The cloud controller manager lets you link your cluster into your cloud provider's API, and separates out the components that interact with that cloud platform from components that only interact with your cluster.
+The cloud-controller-manager only runs controllers that are specific to your cloud provider. If you are running Kubernetes on your own premises, or in a learning environment inside your own PC, the cluster does not have a cloud controller manager.
+As with the kube-controller-manager, the cloud-controller-manager combines several logically independent control loops into a single binary that you run as a single process. You can scale horizontally (run more than one copy) to improve performance or to help tolerate failures.
+The following controllers can have cloud provider dependencies:
+- Node controller: For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
+- Route controller: For setting up routes in the underlying cloud infrastructure
+- Service controller: For creating, updating and deleting cloud provider load balancers
+
+
+#### Node Components
+
+Node components run on every node, maintaining running pods and providing the Kubernetes runtime environment.
+
+**kubelet**
+An agent that runs on each node in the cluster. It makes sure that containers are running in a Pod.
+The kubelet takes a set of PodSpecs that are provided through various mechanisms and ensures that the containers described in those PodSpecs are running and healthy. The kubelet doesn't manage containers which were not created by Kubernetes.
+
+**kube-proxy**
+kube-proxy is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept.
+kube-proxy maintains network rules on nodes. These network rules allow network communication to your Pods from network sessions inside or outside of your cluster.
+kube-proxy uses the operating system packet filtering layer if there is one and it's available. Otherwise, kube-proxy forwards the traffic itself.
+
+
+### K8s Container Abstractions
+
+**Pods** are the smallest deployable units of computing that you can create and manage in Kubernetes.
+A Pod (as in a pod of whales or pea pod) is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers. A Pod's contents are always co-located and co-scheduled, and run in a shared context. A Pod models an application-specific "logical host": it contains one or more application containers which are relatively tightly coupled. In non-cloud contexts, applications executed on the same physical or virtual machine are analogous to cloud applications executed on the same logical host.
+The shared context of a Pod is a set of Linux namespaces, cgroups, and potentially other facets of isolation - the same things that isolate a Docker container. Within a Pod's context, the individual applications may have further sub-isolations applied.
+In terms of Docker concepts, a Pod is similar to a group of Docker containers with shared namespaces and shared filesystem volumes.
+
+You can use workload resources to create and manage multiple Pods for you. A **controller** for the resource handles replication and rollout and automatic healing in case of Pod failure. For example, if a Node fails, a controller notices that Pods on that Node have stopped working and creates a replacement Pod. The scheduler places the replacement Pod onto a healthy Node.
+
+Here are some examples of workload resources that manage one or more Pods:
+
+- Deployment
+- StatefulSet
+- DaemonSet
+
+**Service** - An abstract way to expose an application running on a set of Pods as a network service.
+With Kubernetes you don't need to modify your application to use an unfamiliar service discovery mechanism. Kubernetes gives Pods their own IP addresses and a single DNS name for a set of Pods, and can load-balance across them.
+
+
+### Kubernetes Run, Create, and Apply
+
+Kubernetes is evolving, and so is the CLI. K8s is very unopinionated, meaning there's plenty of ways for us to do stuff. 
+We get three ways to create pods from the kubectl CLI:
+
+`kubectl run` (like docker run)
+`kubectl create` (like docker create in Swarm)
+`kubectl apply` (like docker stack deploy in Swarm)
+
+### Creating Pods
+
+**To run a pod of nginx web server:**
+
+`kubectl run my-nginx --image nginx`
+
+**Creating a Deployment:** 
+
+`kubectl create deployment nginx --image nginx`
+
+**To list pods:**
+
+`kubectl get pods`
+
+**To list all running objects:**
+
+`kubectl get all`
+
+**To delete a pod:**
+
+`kubectl delete deployment my-nginx`
+
+![pods](images/podscontr.png)
+
+
+### Scaling Replica Sets
+
+To start off, run an apache deployment:
+
+`kubectl create deployment my-apache --image httpd `
+
+This command gives us a single replica. **To scale it up to 2:**
+
+`kubectl scale deploy/my-apache --replicas 2`
+
+This command is the same as `kubectl scale deployment my-apache --replicas 2`, just a shorthand.
+
+
+### Inspecting Kubernetes objects
+
+**To get a log for our running deployment (apache):**
+
+`kubectl logs deployment/my-apache`
+
+**There's also a way to get a bunch of details about an object, including events. For example, objects with a same label:**
+
+`kubectl logs -l run=my-apache`
+
+**To get logs of a specifics pod:**
+
+`kubectl describe <pod name>`
+
+Of course, there are 3rd party tools that do logging way better than these CLI commands, and they are the ones used in real life situations.
+
+
+### Exposing Containers
+
+**To create a service for existing pods, we use:**
+
+`kubectl expose`
+
+A **service** is a stable address for pod(s). If we want to connect to pod(s), we need a service. CoreDNS allows us to resolve services by name. 
+
+**There are different types of services:**
+**1) ClusterIP
+2) NodePort
+3) LoadBalancer
+4) ExternalName**
+
+**ClusterIP** is the default. It has a single, internal virtual IP allocated, and its only reachable from within cluster (nodes and pods). Pods can reach service on apps port number. Only good within the cluster.
+
+**NodePort** is subtly different. It's designed so that something outside the cluster can talk to the pods within the cluster. It has a high port allocated on each node. Port is open on every node's IP, and anyone can connect to it.
+
+**LoadBalancer** is mostly used in the cloud. The idea here is you're controlling an external load balancer through kubectl. Only available when infrastructure provider gives you a LB (AWS ELB, etc). It creates NodePort+ClusterIP services, and it tells LB to send to NodePort. Only for traffic coming into your cluster from remote.
+
+**ExternalName** is used less often, it's about stuff inside the cluster that need to talk to outside services. Adds CNAME DNS record to CoreDNS only. Useful when doing migration of things.
+
+
+
+### Creating a ClusterIP Service
+
+Starting with `kubectl get pods -w` to watch what's happening.
+
+**Now, we create a deployment:**
+
+`kubectl create deployment httpenv --image=bretfisher/httpenv`
+
+**To scale it to 5 replicas:**
+
+`kubectl scale deployment/httpenv --replicas=5`
+
+**Now, we create a service:**
+
+`kubectl expose deployment/httpenv --port 8888`
+
+**To get all services, do:**
+
+`kubectl get service`
+
+**We need to run another pod on that cluster so we can curl it (`curl httpenv:8888`)**
+
+`kubectl run tmp-shell --rm -it --image bretfisher/netshoot -- bash`
+
+We have to do it like this on Windows because Docker doesn't run natively on Windows, but you can just do straight curl on Linux, without having to run an extra pod inside.
+
+
+### Creating a NodePort and LoadBalancer Service
+
+**We expose a NodePort so we can access it via the host IP (including localhost)**
+
+`kubectl expose deployment/httpenv --port 8888 --name httpenv-np --type NodePort`
+
+![nodeport](images/nodeport.png)
+
+These types are additive, meaning NodePort creates a ClusterIP, and LoadBalancer creates a NodePort. NodePort starts a ClusterIP and a public port that people can use to connect to that ClusterIP from outside. That means I can just `curl localhost:30414` natively on Windows and get a valid response.
+
+**LoadBalancer** service is built in Docker.
+
+`kubectl expose deployment/httpenv --port 8888 --name httpenv-lb --type LoadBalancer`
+
+
+### Run, Create, and Expose Generators
+
+Kubectl commands use helper templates called "**generators**". Every resource in K8s has a specification, and this is what generators are. Generators are for one line commands in K8s. Not very important since the `run` command is changing.
+
+The goal of the **`run`** command is to reduce its features, so that it only creates Pods, which it does in the present. The idea is to make it easy like `docker run` for one-off tasks. In real life, its only used for troubleshooting, like one-off running a container for stats, etc.
+
+
+### Imperative vs Declarative
+
+To describe it in software terms:
+- Imperative: Focus on how a program operates (I need this and this for a cup of coffee)
+- Declarative: Focus on what a program should accomplish (Hey barista, I want a cup of coffee)
+
+**Kubernetes Imperative** - what I've done so far, commands like `kubectl run`, `kubectl create deployment`, etc. We ask kubectl to create a deployment, as it doesn't exist. Different commands are required to change stuff. I need to create a Service, and that Service needs to be a LoadBalancer, etc...
+
+**Kubernetes Declarative** - I just know the end result I want. For example, `kubectl apply -f my-resources.yaml`. Basically, we only know what we want the end result to be. Same command each time. One popular way of working with this is GitOps - you make a change to YAML, commit it, and that way you have a log of all of your actions.
+
+
+### Three Management Approaches
+
+1) **Imperative commands** - using `run`, `expose`, etc, straight in the CLI. Best for learning purposes, not used in real life.
+2) **Imperative objects** - a mix of CLI commands and YAML - `create -f file.yml`, etc. Good for prod of small environments, hard to automate.
+3) **Declarative objects** - only YAML, and the only CLI we use is `apply -f file.yml`, for example. Best for prod, easier to automate.
+
+Most important rule is **not to mix these approaches.** Best way is to use full on YAML model (3), and commit everything on every spec (GitOps).
+
+Stao na 16.1
